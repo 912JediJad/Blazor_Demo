@@ -23,7 +23,6 @@ c:\Users\theje\Desktop\Junior Fall\CSC 2053\Project_3\Final_Project\obj\Debug\ne
 c:\Users\theje\Desktop\Junior Fall\CSC 2053\Project_3\Final_Project\obj\Debug\net10.0\scopedcss\Components\Layout\ReconnectModal.razor.rz.scp.css
 c:\Users\theje\Desktop\Junior Fall\CSC 2053\Project_3\Final_Project\obj\Debug\net10.0\scopedcss\bundle\Final_Project.styles.css
 c:\Users\theje\Desktop\Junior Fall\CSC 2053\Project_3\Final_Project\obj\Debug\net10.0\scopedcss\projectbundle\Final_Project.bundle.scp.css
-c:\Users\theje\Desktop\Junior Fall\CSC 2053\Project_3\Final_Project\obj\Debug\net10.0\compressed\lc65bfszw5-{0}-khy4lop6wu-khy4lop6wu.gz
 c:\Users\theje\Desktop\Junior Fall\CSC 2053\Project_3\Final_Project\obj\Debug\net10.0\compressed\ltj36ns0c3-{0}-bqjiyaj88i-bqjiyaj88i.gz
 c:\Users\theje\Desktop\Junior Fall\CSC 2053\Project_3\Final_Project\obj\Debug\net10.0\compressed\y4u2twyu9w-{0}-c2jlpeoesf-c2jlpeoesf.gz
 c:\Users\theje\Desktop\Junior Fall\CSC 2053\Project_3\Final_Project\obj\Debug\net10.0\compressed\4pe4ppczuh-{0}-erw9l3u2r3-erw9l3u2r3.gz
@@ -169,3 +168,5 @@ C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Projec
 C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\Final_Project.genruntimeconfig.cache
 C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\ref\Final_Project.dll
 c:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\compressed\lc65bfszw5-{0}-fy6qusu4ny-fy6qusu4ny.gz
+c:\Users\theje\Desktop\Junior Fall\CSC 2053\Project_3\Final_Project\obj\Debug\net10.0\Final_Project.sourcelink.json
+c:\Users\theje\Desktop\Junior Fall\CSC 2053\Project_3\Final_Project\obj\Debug\net10.0\compressed\lc65bfszw5-{0}-fy6qusu4ny-fy6qusu4ny.gz
