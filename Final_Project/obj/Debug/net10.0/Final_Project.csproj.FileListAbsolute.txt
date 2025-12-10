@@ -155,6 +155,8 @@ C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Projec
 C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\compressed\irnbrsgf66-{0}-13ja33weya-13ja33weya.gz
 C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\compressed\q2jspxhmyx-{0}-j8lzlu28q6-j8lzlu28q6.gz
 C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\compressed\yrlewimdd7-{0}-u1n4jc5v46-u1n4jc5v46.gz
+C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\compressed\lw6v4mvpu2-{0}-dcfofrvqwg-dcfofrvqwg.gz
+C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\compressed\vmmnvhd8tk-{0}-dcfofrvqwg-dcfofrvqwg.gz
 C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\staticwebassets.build.json
 C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\staticwebassets.build.json.cache
 C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\staticwebassets.development.json
@@ -168,5 +170,3 @@ C:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Projec
 c:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\compressed\lc65bfszw5-{0}-fy6qusu4ny-fy6qusu4ny.gz
 c:\Users\theje\Desktop\Junior Fall\CSC 2053\Project_3\Final_Project\obj\Debug\net10.0\Final_Project.sourcelink.json
 c:\Users\theje\Desktop\Junior Fall\CSC 2053\Project_3\Final_Project\obj\Debug\net10.0\compressed\lc65bfszw5-{0}-fy6qusu4ny-fy6qusu4ny.gz
-c:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\compressed\lw6v4mvpu2-{0}-dcfofrvqwg-dcfofrvqwg.gz
-c:\Users\jcarr\OneDrive\Documents\CS 2053\Git\Project 3\Blazor_Demo\Final_Project\obj\Debug\net10.0\compressed\vmmnvhd8tk-{0}-dcfofrvqwg-dcfofrvqwg.gz
