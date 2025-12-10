@@ -45,19 +45,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\theje\\.nuget\\packages\\": {}
+    "C:\\Users\\jcarr\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "c:\\Users\\theje\\Desktop\\Junior Fall\\CSC 2053\\Project_3\\Final_Project\\Final_Project.csproj",
+      "projectUniqueName": "c:\\Users\\jcarr\\OneDrive\\Documents\\CS 2053\\Git\\Project 3\\Blazor_Demo\\Final_Project\\Final_Project.csproj",
       "projectName": "Final_Project",
-      "projectPath": "c:\\Users\\theje\\Desktop\\Junior Fall\\CSC 2053\\Project_3\\Final_Project\\Final_Project.csproj",
-      "packagesPath": "C:\\Users\\theje\\.nuget\\packages\\",
-      "outputPath": "c:\\Users\\theje\\Desktop\\Junior Fall\\CSC 2053\\Project_3\\Final_Project\\obj\\",
+      "projectPath": "c:\\Users\\jcarr\\OneDrive\\Documents\\CS 2053\\Git\\Project 3\\Blazor_Demo\\Final_Project\\Final_Project.csproj",
+      "packagesPath": "C:\\Users\\jcarr\\.nuget\\packages\\",
+      "outputPath": "c:\\Users\\jcarr\\OneDrive\\Documents\\CS 2053\\Git\\Project 3\\Blazor_Demo\\Final_Project\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\theje\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\jcarr\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
