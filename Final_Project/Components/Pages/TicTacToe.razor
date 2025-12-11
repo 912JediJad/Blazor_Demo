@@ -1,7 +1,182 @@
 @page "/tic-tac-toe"
+@rendermode InteractiveServer
+
+<PageTitle>Tic Tac Toe</PageTitle>
 
 <h1>Tic Tac Toe</h1>
 
-<p>Game coming soon!</p>
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col">
+                <h4>Player 1 (X)</h4>
+                <h2 class="text-primary">@player1Score</h2>
+            </div>
+            <div class="col">
+                <h4>Player 2 (O)</h4>
+                <h2 class="text-danger">@player2Score</h2>
+            </div>
+        </div>
+    </div>
+</div>
 
-<!-- later you'll put the game board and logic here -->
+<div class="status-bar text-center mb-3">
+    @if (!string.IsNullOrEmpty(winner))
+    {
+        // Display winner name based on X or O
+        string winnerName = winner == "X" ? "Player 1" : "Player 2";
+        <h3 class="text-success fw-bold">Winner: @winnerName!</h3>
+    }
+    else if (isDraw)
+    {
+        <h3 class="text-warning fw-bold">It's a Draw!</h3>
+    }
+    else
+    {
+        // Display whose turn it is
+        string turnName = currentPlayer == "X" ? "Player 1" : "Player 2";
+        <h3>Current Turn: @turnName (@currentPlayer)</h3>
+    }
+</div>
+
+<div class="board-container">
+    <div class="board">
+        @for (int i = 0; i < 9; i++)
+        {
+            int localIndex = i;
+            <button class="cell @GetColorClass(board[localIndex])" @onclick="() => MakeMove(localIndex)">
+                @board[localIndex]
+            </button>
+        }
+    </div>
+</div>
+
+<div class="text-center mt-3">
+    <button class="btn btn-primary btn-lg" @onclick="ResetGame">
+        Next Game (Start: @(gameStarter == "X" ? "Player 2" : "Player 1"))
+    </button>
+</div>
+
+<style>
+    .board-container {
+        display: flex;
+        justify-content: center;
+    }
+
+    .board {
+        display: grid;
+        grid-template-columns: repeat(3, 100px);
+        gap: 5px;
+    }
+
+    .cell {
+        width: 100px;
+        height: 100px;
+        font-size: 2.5em;
+        font-weight: bold;
+        background-color: #f8f9fa;
+        border: 2px solid #dee2e6;
+        cursor: pointer;
+    }
+
+    .cell:hover {
+        background-color: #e2e6ea;
+    }
+    
+    /* Colors for X and O */
+    .text-x { color: #0d6efd; } /* Blue */
+    .text-o { color: #dc3545; } /* Red */
+</style>
+
+@code {
+    // State
+    private string[] board = new string[9];
+    private string currentPlayer = "X";
+    private string gameStarter = "X"; // Tracks who starts the CURRENT game
+    private string? winner = null;
+    private bool isDraw = false;
+
+    // Scores
+    private int player1Score = 0;
+    private int player2Score = 0;
+
+    private readonly int[][] winningCombinations = new int[][]
+    {
+        new[] {0, 1, 2}, new[] {3, 4, 5}, new[] {6, 7, 8},
+        new[] {0, 3, 6}, new[] {1, 4, 7}, new[] {2, 5, 8},
+        new[] {0, 4, 8}, new[] {2, 4, 6}
+    };
+
+    private void MakeMove(int index)
+    {
+        if (!string.IsNullOrEmpty(board[index]) || winner != null) return;
+
+        board[index] = currentPlayer;
+
+        CheckWinner();
+
+        if (winner == null && !isDraw)
+        {
+            currentPlayer = currentPlayer == "X" ? "O" : "X";
+        }
+    }
+
+    private void CheckWinner()
+    {
+        foreach (var combo in winningCombinations)
+        {
+            if (!string.IsNullOrEmpty(board[combo[0]]) &&
+                board[combo[0]] == board[combo[1]] &&
+                board[combo[1]] == board[combo[2]])
+            {
+                winner = currentPlayer;
+                UpdateScore(winner);
+                return;
+            }
+        }
+
+        if (!board.Any(string.IsNullOrEmpty)) isDraw = true;
+    }
+
+    private void UpdateScore(string winningSymbol)
+    {
+        // Player 1 is always X, Player 2 is always O
+        if (winningSymbol == "X")
+        {
+            player1Score++;
+        }
+        else
+        {
+            player2Score++;
+        }
+    }
+
+    private void ResetGame()
+    {
+        // 1. Clear the board
+        board = new string[9];
+        winner = null;
+        isDraw = false;
+
+        // 2. Swap who goes first
+        if (gameStarter == "X")
+        {
+            gameStarter = "O"; // Player 2 starts next
+        }
+        else
+        {
+            gameStarter = "X"; // Player 1 starts next
+        }
+
+        // 3. Set the current turn to the new starter
+        currentPlayer = gameStarter;
+    }
+
+    // Helper for CSS styling
+    private string GetColorClass(string cellValue)
+    {
+        if (cellValue == "X") return "text-x";
+        if (cellValue == "O") return "text-o";
+        return "";
+    }
+}
