@@ -1,7 +1,962 @@
 @page "/dodgegame"
+@rendermode InteractiveServer
+@implements IDisposable
 
 <h1>Dodge!</h1>
+<p>Right-click anywhere in the game area to move your character</p>
+<p>Score: @score | Lives: @lives | Difficulty Level: @difficultyLevel</p>
+<p>Spawn Rate: @spawnRateDisplay | Bullet Speed: @bulletSpeedDisplay px/frame</p>
 
-<p>Dodge what goes after you...</p>
+<div class="controls">
+    <label for="speedSlider">Speed: @playerSpeed px/frame</label>
+    <input id="speedSlider"
+           type="range"
+           min="1"
+           max="10"
+           step="0.5"
+           @bind="playerSpeed"
+           @bind:event="oninput" />
+    <button @onclick="RestartGame" class="restart-btn">Restart Game</button>
+</div>
 
-<!-- later you'll put your hangman UI + logic here -->
+@if (gameOver)
+{
+    <div class="game-over">
+        <h2>Game Over!</h2>
+        <p>Final Score: @score</p>
+        <button @onclick="RestartGame">Play Again</button>
+    </div>
+}
+
+<div class="game-container"
+     @oncontextmenu="HandleRightClick"
+     @oncontextmenu:preventDefault="true">
+    
+    <!-- Player -->
+    <div class="player-dot"
+         style="left: @(playerX)px; top: @(playerY)px;">
+    </div>
+    
+    <!-- Target indicator -->
+    @if (isMoving)
+    {
+        <div class="target-indicator"
+             style="left: @(targetX)px; top: @(targetY)px;">
+        </div>
+    }
+
+    <!-- Round Bullets -->
+    @foreach (var bullet in bullets)
+    {
+        <div class="bullet"
+             style="left: @(bullet.X)px; top: @(bullet.Y)px;
+                    width: @(bullet.Size)px; height: @(bullet.Size)px;">
+        </div>
+    }
+
+    <!-- Rectangle Bullets -->
+    @foreach (var rect in rectangleBullets)
+    {
+        <div class="rect-bullet"
+             style="left: @(rect.X)px; top: @(rect.Y)px;
+                    width: @(rect.Width)px; height: @(rect.Height)px;">
+        </div>
+    }
+
+    <!-- Lines (warnings and strikes) -->
+    @foreach (var line in lines)
+    {
+        @if (line.IsVertical)
+        {
+            <div class="line-obstacle @(line.IsWarning ? "line-warning" : "line-strike")"
+                 style="left: @(line.Position)px; top: 0; width: @(line.Width)px; height: 600px;">
+            </div>
+        }
+        else
+        {
+            <div class="line-obstacle @(line.IsWarning ? "line-warning" : "line-strike")"
+                 style="left: 0; top: @(line.Position)px; width: 800px; height: @(line.Width)px;">
+            </div>
+        }
+    }
+
+    <!-- Circles (warnings and strikes) -->
+    @foreach (var circle in circles)
+    {
+        <div class="circle-obstacle @(circle.IsWarning ? "circle-warning" : "circle-strike")"
+             style="left: @(circle.X)px; top: @(circle.Y)px; 
+                    width: @(circle.Radius * 2)px; height: @(circle.Radius * 2)px;">
+        </div>
+    }
+
+    <!-- Growing Cones (wave of vertical lines) -->
+    @foreach (var cone in growingCones)
+    {
+        @foreach (var line in cone.Lines)
+        {
+            <div class="wave-line"
+                 style="left: @(line.X)px; top: @(line.Y)px;
+                        width: @(line.Width)px; height: @(line.Height)px;">
+            </div>
+        }
+    }
+
+    <!-- Strike Cones (warning then strike) -->
+    @foreach (var cone in strikeCones)
+    {
+        var rotation = cone.FromLeft ? 0 : 180;
+        var originX = cone.FromLeft ? "0%" : "100%";
+        var coneClass = cone.IsWarning ? "strike-cone-warning" : "strike-cone-strike";
+        
+        <div class="@coneClass"
+             style="left: @(cone.X)px; top: @(cone.Y)px;
+                    width: @(cone.MaxLength)px; height: @(cone.MaxWidth)px;
+                    transform: rotate(@(rotation)deg);
+                    transform-origin: @originX 50%;">
+        </div>
+    }
+</div>
+
+<style>
+    .controls {
+        margin: 20px 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .controls label {
+        font-weight: bold;
+        min-width: 150px;
+    }
+
+    .controls input[type="range"] {
+        width: 300px;
+        height: 8px;
+        border-radius: 5px;
+        background: #d3d3d3;
+        outline: none;
+        cursor: pointer;
+    }
+
+    .controls input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #00ff41;
+        cursor: pointer;
+        box-shadow: 0 0 10px #00ff41;
+    }
+
+    .controls input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #00ff41;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 0 10px #00ff41;
+    }
+
+    .restart-btn {
+        padding: 8px 16px;
+        background-color: #00ff41;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s;
+    }
+
+    .restart-btn:hover {
+        background-color: #00cc33;
+        box-shadow: 0 0 10px #00ff41;
+    }
+
+    .game-over {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        padding: 40px;
+        border-radius: 10px;
+        text-align: center;
+        z-index: 1000;
+        border: 2px solid #ff0000;
+    }
+
+    .game-over h2 {
+        color: #ff0000;
+        margin-bottom: 20px;
+    }
+
+    .game-over button {
+        padding: 10px 20px;
+        background-color: #00ff41;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 16px;
+        margin-top: 20px;
+    }
+
+    .game-container {
+        position: relative;
+        width: 800px;
+        height: 600px;
+        background-color: #1a1a2e;
+        border: 3px solid #16213e;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: crosshair;
+        margin-top: 20px;
+    }
+
+    .player-dot {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background-color: #00ff41;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 15px #00ff41, 0 0 30px #00ff41;
+        z-index: 10;
+    }
+
+    .player-dot::after {
+        content: '';
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #ffffff;
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .target-indicator {
+        position: absolute;
+        width: 15px;
+        height: 15px;
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        animation: pulse 1s infinite;
+    }
+
+    .bullet {
+        position: absolute;
+        background-color: #ff3333;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 10px #ff3333;
+        z-index: 5;
+    }
+
+    .rect-bullet {
+        position: absolute;
+        background-color: #ff6633;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 10px #ff6633;
+        z-index: 5;
+    }
+
+    .line-obstacle {
+        position: absolute;
+        z-index: 5;
+    }
+
+    .line-warning {
+        background-color: rgba(255, 255, 0, 0.5);
+        animation: flash-warning 0.3s infinite;
+    }
+
+    .line-strike {
+        background-color: #ff0000;
+        box-shadow: 0 0 20px #ff0000;
+    }
+
+    .circle-obstacle {
+        position: absolute;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 5;
+    }
+
+    .circle-warning {
+        background-color: rgba(255, 255, 0, 0.3);
+        border: 3px dashed rgba(255, 255, 0, 0.7);
+        animation: pulse-warning 0.5s infinite;
+    }
+
+    .circle-strike {
+        background-color: rgba(255, 0, 0, 0.7);
+        box-shadow: 0 0 30px #ff0000;
+    }
+
+    .wave-line {
+        position: absolute;
+        background-color: rgba(255, 80, 80, 0.8);
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 8px rgba(255, 80, 80, 0.6);
+        z-index: 5;
+    }
+
+    .strike-cone-warning {
+        position: absolute;
+        background: linear-gradient(to right, rgba(255, 255, 0, 0.4), rgba(255, 255, 0, 0.1));
+        clip-path: polygon(0% 50%, 100% 0%, 100% 100%);
+        border: 2px dashed rgba(255, 255, 0, 0.6);
+        z-index: 5;
+        animation: pulse-cone-warning 0.4s infinite;
+    }
+
+    .strike-cone-strike {
+        position: absolute;
+        background: linear-gradient(to right, rgba(255, 0, 0, 0.9), rgba(255, 0, 0, 0.3));
+        clip-path: polygon(0% 50%, 100% 0%, 100% 100%);
+        box-shadow: 0 0 30px rgba(255, 0, 0, 0.8);
+        z-index: 5;
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            opacity: 0.5;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        50% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+    }
+
+    @@keyframes flash-warning {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+    }
+
+    @@keyframes pulse-warning {
+        0%, 100% {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0.5;
+        }
+        50% {
+            transform: translate(-50%, -50%) scale(1.1);
+            opacity: 0.8;
+        }
+    }
+
+    @@keyframes pulse-cone-warning {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 0.7; }
+    }
+</style>
+
+@code {
+    // Player
+    private double playerX = 400;
+    private double playerY = 300;
+    private double targetX = 400;
+    private double targetY = 300;
+    private bool isMoving = false;
+    private double playerSpeed = 3.0;
+
+    // Game state
+    private int score = 0;
+    private int lives = 3;
+    private bool gameOver = false;
+    private System.Threading.Timer? gameTimer;
+    private Random random = new Random();
+    private int frameCount = 0;
+
+    // Difficulty scaling
+    private int difficultyLevel = 1;
+    private double baseBulletSpeed = 3.0;
+    private double bulletSpeedMultiplier = 1.0;
+    private int baseSpawnInterval = 120; // frames
+    private double spawnRateMultiplier = 1.0;
+    private string spawnRateDisplay = "Normal";
+    private string bulletSpeedDisplay = "3.0";
+
+    // Obstacles
+    private List<Bullet> bullets = new List<Bullet>();
+    private List<RectangleBullet> rectangleBullets = new List<RectangleBullet>();
+    private List<LineObstacle> lines = new List<LineObstacle>();
+    private List<CircleObstacle> circles = new List<CircleObstacle>();
+    private List<GrowingCone> growingCones = new List<GrowingCone>();
+    private List<StrikeCone> strikeCones = new List<StrikeCone>();
+
+    protected override void OnInitialized()
+    {
+        gameTimer = new System.Threading.Timer(UpdateGame, null, 0, 16); // ~60 FPS
+    }
+
+    private void UpdateGame(object? state)
+    {
+        if (gameOver) return;
+
+        frameCount++;
+        
+        // Update player movement
+        if (isMoving)
+        {
+            double dx = targetX - playerX;
+            double dy = targetY - playerY;
+            double distance = Math.Sqrt(dx * dx + dy * dy);
+
+            if (distance < playerSpeed)
+            {
+                playerX = targetX;
+                playerY = targetY;
+                isMoving = false;
+            }
+            else
+            {
+                double directionX = dx / distance;
+                double directionY = dy / distance;
+                playerX += directionX * playerSpeed;
+                playerY += directionY * playerSpeed;
+            }
+        }
+
+        // Spawn obstacles
+        SpawnObstacles();
+
+        // Update obstacles
+        UpdateBullets();
+        UpdateRectangleBullets();
+        UpdateLines();
+        UpdateCircles();
+        UpdateGrowingCones();
+        UpdateStrikeCones();
+
+        // Check collisions
+        CheckCollisions();
+
+        // Update score and difficulty
+        if (frameCount % 60 == 0) // Every second
+        {
+            score++;
+        }
+
+        // Increase difficulty every 5 seconds (was 10)
+        if (frameCount % 300 == 0)
+        {
+            difficultyLevel++;
+            bulletSpeedMultiplier = 1.0 + (difficultyLevel - 1) * 0.15;
+            spawnRateMultiplier = Math.Max(0.5, 1.0 - (difficultyLevel - 1) * 0.08);
+            
+            // Update display values
+            bulletSpeedDisplay = (baseBulletSpeed * bulletSpeedMultiplier).ToString("F1");
+            spawnRateDisplay = difficultyLevel <= 3 ? "Normal" :
+                               difficultyLevel <= 6 ? "Fast" :
+                               difficultyLevel <= 10 ? "Very Fast" : "Extreme";
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void SpawnObstacles()
+    {
+        int adjustedBulletInterval = (int)(baseSpawnInterval * spawnRateMultiplier);
+        int adjustedRectInterval = (int)(150 * spawnRateMultiplier);
+        int adjustedLineInterval = (int)(300 * spawnRateMultiplier);
+        int adjustedCircleInterval = (int)(240 * spawnRateMultiplier);
+        int adjustedGrowingConeInterval = (int)(400 * spawnRateMultiplier);
+        int adjustedStrikeConeInterval = (int)(500 * spawnRateMultiplier);
+
+        // Spawn round bullets
+        if (frameCount % adjustedBulletInterval == 0)
+        {
+            bool fromLeft = random.Next(2) == 0;
+            int size = random.Next(12, 22);
+            bullets.Add(new Bullet
+            {
+                X = fromLeft ? 0 : 800,
+                Y = random.Next(50, 550),
+                Speed = baseBulletSpeed * bulletSpeedMultiplier,
+                MovingRight = fromLeft,
+                Size = size
+            });
+        }
+
+        // Spawn rectangle bullets
+        if (frameCount % adjustedRectInterval == 0)
+        {
+            bool fromLeft = random.Next(2) == 0;
+            int width = random.Next(15, 30);
+            int height = random.Next(10, 20);
+            rectangleBullets.Add(new RectangleBullet
+            {
+                X = fromLeft ? 0 : 800,
+                Y = random.Next(50, 550),
+                Speed = baseBulletSpeed * bulletSpeedMultiplier * 0.9,
+                MovingRight = fromLeft,
+                Width = width,
+                Height = height
+            });
+        }
+
+        // Spawn lines
+        if (frameCount % adjustedLineInterval == 0)
+        {
+            bool isVertical = random.Next(2) == 0;
+            int width = random.Next(8, 18);
+            lines.Add(new LineObstacle
+            {
+                Position = isVertical ? random.Next(100, 700) : random.Next(100, 500),
+                IsVertical = isVertical,
+                IsWarning = true,
+                TimeRemaining = 60,
+                Width = width
+            });
+        }
+
+        // Spawn circles
+        if (frameCount % adjustedCircleInterval == 0)
+        {
+            int radius = random.Next(35, 70);
+            circles.Add(new CircleObstacle
+            {
+                X = random.Next(100, 700),
+                Y = random.Next(100, 500),
+                Radius = radius,
+                IsWarning = true,
+                TimeRemaining = 60
+            });
+        }
+
+        // Spawn growing cones (wave attacks)
+        if (frameCount % adjustedGrowingConeInterval == 0)
+        {
+            bool fromLeft = random.Next(2) == 0;
+            growingCones.Add(new GrowingCone
+            {
+                StartX = fromLeft ? 0 : 800,
+                StartY = random.Next(100, 500),
+                FromLeft = fromLeft,
+                GrowthSpeed = 3.0,
+                CurrentDistance = 0,
+                MaxDistance = 500,
+                FramesSinceLastLine = 0,
+                Lines = new List<WaveLine>()
+            });
+        }
+
+        // Spawn strike cones
+        if (frameCount % adjustedStrikeConeInterval == 0)
+        {
+            bool fromLeft = random.Next(2) == 0;
+            int maxWidth = random.Next(180, 280);
+            strikeCones.Add(new StrikeCone
+            {
+                X = fromLeft ? 0 : 800,
+                Y = random.Next(100, 500),
+                MaxLength = 500,
+                MaxWidth = maxWidth,
+                FromLeft = fromLeft,
+                IsWarning = true,
+                TimeRemaining = 60
+            });
+        }
+    }
+
+    private void UpdateBullets()
+    {
+        foreach (var bullet in bullets.ToList())
+        {
+            bullet.X += bullet.MovingRight ? bullet.Speed : -bullet.Speed;
+            if (bullet.X < -50 || bullet.X > 850)
+            {
+                bullets.Remove(bullet);
+            }
+        }
+    }
+
+    private void UpdateRectangleBullets()
+    {
+        foreach (var rect in rectangleBullets.ToList())
+        {
+            rect.X += rect.MovingRight ? rect.Speed : -rect.Speed;
+            if (rect.X < -50 || rect.X > 850)
+            {
+                rectangleBullets.Remove(rect);
+            }
+        }
+    }
+
+    private void UpdateLines()
+    {
+        foreach (var line in lines.ToList())
+        {
+            if (line.IsWarning)
+            {
+                line.TimeRemaining--;
+                if (line.TimeRemaining <= 0)
+                {
+                    line.IsWarning = false;
+                    line.TimeRemaining = 30;
+                }
+            }
+            else
+            {
+                line.TimeRemaining--;
+                if (line.TimeRemaining <= 0)
+                {
+                    lines.Remove(line);
+                }
+            }
+        }
+    }
+
+    private void UpdateCircles()
+    {
+        foreach (var circle in circles.ToList())
+        {
+            if (circle.IsWarning)
+            {
+                circle.TimeRemaining--;
+                if (circle.TimeRemaining <= 0)
+                {
+                    circle.IsWarning = false;
+                    circle.TimeRemaining = 30;
+                }
+            }
+            else
+            {
+                circle.TimeRemaining--;
+                if (circle.TimeRemaining <= 0)
+                {
+                    circles.Remove(circle);
+                }
+            }
+        }
+    }
+
+    private void UpdateGrowingCones()
+    {
+        foreach (var cone in growingCones.ToList())
+        {
+            cone.FramesSinceLastLine++;
+            
+            // Add a new line every 3 frames
+            if (cone.FramesSinceLastLine >= 3 && cone.CurrentDistance < cone.MaxDistance)
+            {
+                cone.FramesSinceLastLine = 0;
+                cone.CurrentDistance += cone.GrowthSpeed;
+                
+                // Calculate position and height for the new line
+                double lineX = cone.FromLeft ? cone.StartX + cone.CurrentDistance : cone.StartX - cone.CurrentDistance;
+                
+                // Height grows as the wave progresses (starts small, gets bigger)
+                // Use a linear or quadratic growth based on distance from origin
+                double heightGrowthFactor = cone.CurrentDistance / cone.MaxDistance;
+                double lineHeight = 20 + (heightGrowthFactor * 180); // Grows from 20 to 200
+                
+                cone.Lines.Add(new WaveLine
+                {
+                    X = lineX,
+                    Y = cone.StartY,
+                    Height = lineHeight,
+                    Width = 4.0
+                });
+            }
+            
+            // Remove wave if it reached max distance and stayed for a bit
+            if (cone.CurrentDistance >= cone.MaxDistance)
+            {
+                // Keep wave visible for 30 more frames after completion
+                if (cone.Lines.Count > 0 && cone.FramesSinceLastLine > 30)
+                {
+                    growingCones.Remove(cone);
+                }
+            }
+        }
+    }
+
+    private void UpdateStrikeCones()
+    {
+        foreach (var cone in strikeCones.ToList())
+        {
+            if (cone.IsWarning)
+            {
+                cone.TimeRemaining--;
+                if (cone.TimeRemaining <= 0)
+                {
+                    cone.IsWarning = false;
+                    cone.TimeRemaining = 30;
+                }
+            }
+            else
+            {
+                cone.TimeRemaining--;
+                if (cone.TimeRemaining <= 0)
+                {
+                    strikeCones.Remove(cone);
+                }
+            }
+        }
+    }
+
+    private void CheckCollisions()
+    {
+        const double playerRadius = 10;
+
+        // Check round bullet collisions
+        foreach (var bullet in bullets.ToList())
+        {
+            double dx = bullet.X - playerX;
+            double dy = bullet.Y - playerY;
+            double distance = Math.Sqrt(dx * dx + dy * dy);
+            double bulletRadius = bullet.Size / 2.0;
+            if (distance < playerRadius + bulletRadius)
+            {
+                OnHit();
+                bullets.Remove(bullet);
+                break;
+            }
+        }
+
+        // Check rectangle bullet collisions
+        foreach (var rect in rectangleBullets.ToList())
+        {
+            double halfWidth = rect.Width / 2.0;
+            double halfHeight = rect.Height / 2.0;
+            double closestX = Math.Max(rect.X - halfWidth, Math.Min(playerX, rect.X + halfWidth));
+            double closestY = Math.Max(rect.Y - halfHeight, Math.Min(playerY, rect.Y + halfHeight));
+            double dx = playerX - closestX;
+            double dy = playerY - closestY;
+            double distance = Math.Sqrt(dx * dx + dy * dy);
+            if (distance < playerRadius)
+            {
+                OnHit();
+                rectangleBullets.Remove(rect);
+                break;
+            }
+        }
+
+        // Check line collisions
+        foreach (var line in lines.ToList())
+        {
+            if (!line.IsWarning)
+            {
+                double halfWidth = line.Width / 2.0;
+                if (line.IsVertical)
+                {
+                    if (Math.Abs(playerX - line.Position) < playerRadius + halfWidth)
+                    {
+                        OnHit();
+                        lines.Remove(line);
+                        break;
+                    }
+                }
+                else
+                {
+                    if (Math.Abs(playerY - line.Position) < playerRadius + halfWidth)
+                    {
+                        OnHit();
+                        lines.Remove(line);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Check circle collisions
+        foreach (var circle in circles.ToList())
+        {
+            if (!circle.IsWarning)
+            {
+                double dx = circle.X - playerX;
+                double dy = circle.Y - playerY;
+                double distance = Math.Sqrt(dx * dx + dy * dy);
+                if (distance < circle.Radius + playerRadius)
+                {
+                    OnHit();
+                    circles.Remove(circle);
+                    break;
+                }
+            }
+        }
+
+        // Check growing cone collisions (check all lines in wave)
+        foreach (var cone in growingCones.ToList())
+        {
+            bool hitWave = false;
+            foreach (var line in cone.Lines)
+            {
+                // Check if player collides with this line segment
+                double halfWidth = line.Width / 2.0;
+                double halfHeight = line.Height / 2.0;
+                
+                if (Math.Abs(playerX - line.X) < playerRadius + halfWidth &&
+                    Math.Abs(playerY - line.Y) < playerRadius + halfHeight)
+                {
+                    hitWave = true;
+                    break;
+                }
+            }
+            
+            if (hitWave)
+            {
+                OnHit();
+                growingCones.Remove(cone); // Remove entire wave
+                break;
+            }
+        }
+
+        // Check strike cone collisions (only when striking)
+        foreach (var cone in strikeCones.ToList())
+        {
+            if (!cone.IsWarning && IsPointInStrikeCone(playerX, playerY, cone))
+            {
+                OnHit();
+                strikeCones.Remove(cone);
+                break;
+            }
+        }
+    }
+
+    private bool IsPointInStrikeCone(double px, double py, StrikeCone cone)
+    {
+        double coneX = cone.X;
+        double coneY = cone.Y;
+        double length = cone.MaxLength;
+        double halfWidth = cone.MaxWidth / 2.0;
+
+        if (cone.FromLeft)
+        {
+            if (px < coneX || px > coneX + length) return false;
+            double widthAtPoint = (px - coneX) / length * halfWidth;
+            return Math.Abs(py - coneY) <= widthAtPoint;
+        }
+        else
+        {
+            if (px > coneX || px < coneX - length) return false;
+            double widthAtPoint = (coneX - px) / length * halfWidth;
+            return Math.Abs(py - coneY) <= widthAtPoint;
+        }
+    }
+
+    private void OnHit()
+    {
+        lives--;
+        if (lives <= 0)
+        {
+            gameOver = true;
+        }
+    }
+
+    private void HandleRightClick(MouseEventArgs e)
+    {
+        if (gameOver) return;
+        targetX = e.OffsetX;
+        targetY = e.OffsetY;
+        isMoving = true;
+    }
+
+    private void RestartGame()
+    {
+        playerX = 400;
+        playerY = 300;
+        targetX = 400;
+        targetY = 300;
+        isMoving = false;
+        score = 0;
+        lives = 3;
+        gameOver = false;
+        frameCount = 0;
+        difficultyLevel = 1;
+        bulletSpeedMultiplier = 1.0;
+        spawnRateMultiplier = 1.0;
+        spawnRateDisplay = "Normal";
+        bulletSpeedDisplay = "3.0";
+        bullets.Clear();
+        rectangleBullets.Clear();
+        lines.Clear();
+        circles.Clear();
+        growingCones.Clear();
+        strikeCones.Clear();
+    }
+
+    public void Dispose()
+    {
+        gameTimer?.Dispose();
+    }
+
+    // Obstacle classes
+    private class Bullet
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Speed { get; set; }
+        public bool MovingRight { get; set; }
+        public int Size { get; set; }
+    }
+
+    private class RectangleBullet
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Speed { get; set; }
+        public bool MovingRight { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+    }
+
+    private class LineObstacle
+    {
+        public double Position { get; set; }
+        public bool IsVertical { get; set; }
+        public bool IsWarning { get; set; }
+        public int TimeRemaining { get; set; }
+        public int Width { get; set; }
+    }
+
+    private class CircleObstacle
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Radius { get; set; }
+        public bool IsWarning { get; set; }
+        public int TimeRemaining { get; set; }
+    }
+
+    private class GrowingCone
+    {
+        public double StartX { get; set; }
+        public double StartY { get; set; }
+        public bool FromLeft { get; set; }
+        public List<WaveLine> Lines { get; set; } = new List<WaveLine>();
+        public double GrowthSpeed { get; set; }
+        public double CurrentDistance { get; set; }
+        public double MaxDistance { get; set; }
+        public int FramesSinceLastLine { get; set; }
+    }
+
+    private class WaveLine
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Height { get; set; }
+        public double Width { get; set; }
+    }
+
+    private class StrikeCone
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double MaxLength { get; set; }
+        public double MaxWidth { get; set; }
+        public bool FromLeft { get; set; }
+        public bool IsWarning { get; set; }
+        public int TimeRemaining { get; set; }
+    }
+}
